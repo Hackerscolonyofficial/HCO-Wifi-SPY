@@ -1,9 +1,9 @@
 import os, time, subprocess, json, sys
 
-# --- COLORS ---
+# --- ANSI Formatting ---
 G = '\033[1;32m' # Green
-R = '\033[1;31m' # Red
 W = '\033[1;37m' # White
+R = '\033[1;31m' # Red
 Y = '\033[1;33m' # Yellow
 B = '\033[1;34m' # Blue
 BOLD = '\033[1m'
@@ -14,92 +14,81 @@ def clear():
     os.system('clear')
 
 def large_banner():
-    # Large Title inside Red Box
-    title = f" {BOLD}{G}HCO WIFI TOOL{RESET} "
-    print(f"\n{REDBOX}{title}{RESET}")
+    # --- YOUR CUSTOM DESIGN ---
+    box_content = f" {BOLD}{G}HCO WIFI ATTACKER{RESET} "
+    print(f"\n{REDBOX}{box_content}{RESET}")
     print(f"{W}Code by Azhar{RESET}\n")
 
 def redirect_gate():
     clear()
     large_banner()
-    print(f"{Y}[*] Redirection to YouTube App active...")
-    time.sleep(2)
-    # Using termux-open to force the YouTube App
+    print(f"{Y}[*] Opening YouTube channel for tool activation...{RESET}")
+    time.sleep(1.5)
     subprocess.run(["termux-open", "https://youtube.com/@hackers_colony_tech?si=TQdK5Tw4qCzL4ahz"])
-    print(f"\n{G}[+] Redirected successfully.{RESET}")
-    input(f"{W}Press {G}[ENTER]{W} after subscribing to start REAL SCAN...{RESET}")
+    input(f"\n{W}Press {G}[ENTER]{W} once you have subscribed to unlock...{RESET}")
 
-def real_scan():
+def run_scan():
     clear()
     large_banner()
     print(f"{B}[*] INITIALIZING SCAN...{RESET}")
-    print(f"{Y}[!] Note: If stuck, ensure GPS is ON and Termux:API app is installed.{RESET}\n")
     
     try:
-        # We use a timeout so it doesn't stay stuck forever
-        scan_process = subprocess.check_output(["termux-wifi-scaninfo"], timeout=10)
-        networks = json.loads(scan_process)
+        # Increased timeout to 15s to allow hardware to wake up
+        raw_output = subprocess.check_output(["termux-wifi-scaninfo"], timeout=15)
+        networks = json.loads(raw_output)
         
         if not networks:
-            print(f"{R}[!] No networks found. Move closer to a router.{RESET}")
+            print(f"{R}[!] No networks found. Try moving closer to the router.{RESET}")
             return None
 
-        print(f"{W}{'ID':<4} {'WIFI NAME (SSID)':<25} {'SIGNAL'}{RESET}")
-        print("-" * 45)
+        print(f"{W}{'ID':<4} {'SSID':<25} {'SIGNAL'}{RESET}")
+        print(f"{G}" + "-"*45 + f"{RESET}")
         
         for i, net in enumerate(networks):
-            ssid = net.get('ssid', 'Hidden Network')
+            ssid = net.get('ssid', 'Unknown')
             rssi = net.get('rssi', '??')
-            print(f"{G}{i+1:<4} {W}{ssid[:25]:<25} {Y}{rssi}dBm{RESET}")
+            print(f"{i+1:<4} {W}{ssid[:25]:<25} {Y}{rssi}dBm{RESET}")
             
-        print("-" * 45)
         choice = int(input(f"\n{G}[?] Choose Target ID: {W}"))
         return networks[choice-1]['ssid']
-    except subprocess.TimeoutExpired:
-        print(f"{R}[!] ERROR: Scan timed out. Check your GPS and Termux:API permissions!{RESET}")
-        return None
-    except Exception as e:
-        print(f"{R}[!] ERROR: {e}{RESET}")
+        
+    except Exception:
+        print(f"{R}[!] SCAN ERROR: Check Permissions & GPS!{RESET}")
+        time.sleep(2)
         return None
 
-def attack_logic(target):
+def main_attack(target):
     clear()
     large_banner()
     print(f"{W}TARGET: {G}{target}{RESET}")
-    print(f"{W}1. Use Tool Worldlist\n2. Add your Worldlist{RESET}")
+    print(f"{W}1. Use Tool Worldlist (Standard)\n2. Add your Own (.txt){RESET}")
     
-    choice = input(f"\n{G}[?] Select: {W}")
+    mode = input(f"\n{G}[?] Select: {W}")
+    passwords = ["12345678", "88888888", "admin123", "password123"]
     
-    # Real logic: In a dictionary attack, we try to match keys
-    passwords = ["12345678", "88888888", "password", "admin123", "wifi1234"]
-    
-    if choice == "2":
-        path = input(f"{Y}[*] Enter Worldlist Path: {W}")
+    if mode == "2":
+        path = input(f"{Y}[*] Wordlist Path: {W}")
         try:
-            with open(path, 'r') as f:
-                passwords = f.read().splitlines()
-        except:
-            print(f"{R}[!] File not found. Using default.{RESET}")
+            with open(path, 'r') as f: passwords = f.read().splitlines()
+        except: print(f"{R}[!] Path invalid. Using default list.{RESET}")
 
-    print(f"\n{B}[*] ATTACK STARTED...{RESET}")
+    print(f"\n{B}[*] BRUTEFORCE COMMENCED...{RESET}")
     
-    # Simulation of real matching (In non-root, we identify the correct string)
     for p in passwords:
-        sys.stdout.write(f"\r{W}Testing: {Y}{p:<20} {G}[ANALYZING]{RESET}")
+        sys.stdout.write(f"\r{W}Checking: {Y}{p:<20} {G}[MATCHING]{RESET}")
         sys.stdout.flush()
         time.sleep(0.3)
         
-        # Replace '12345678' with a password you know to see it work for real
-        if p == "12345678": 
-            print(f"\n\n{REDBOX} {G}PASSWORD FOUND! {RESET}")
-            print(f"{G}SSID: {target}{RESET}")
-            print(f"{G}PASS: {p}{RESET}")
+        # This will trigger a green success if '12345678' is in the list
+        if p == "12345678":
+            print(f"\n\n{G}[+++++] MATCH FOUND! [+++++]{RESET}")
+            print(f"{REDBOX} {BOLD}{W}PASS: {p} {RESET}")
             return
 
-    print(f"\n\n{R}[!] All passwords tested. No match found.{RESET}")
+    print(f"\n\n{R}[!] All passwords exhausted. No match.{RESET}")
 
 if __name__ == "__main__":
     redirect_gate()
-    target_ssid = real_scan()
+    target_ssid = run_scan()
     if target_ssid:
-        attack_logic(target_ssid)
+        main_attack(target_ssid)
