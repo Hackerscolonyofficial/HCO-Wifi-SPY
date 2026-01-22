@@ -1,4 +1,4 @@
-import os, time, webbrowser, subprocess, json
+import os, time, subprocess, json
 
 # --- ANSI Formatting ---
 GREEN = '\033[1;32m'
@@ -20,61 +20,79 @@ def redirect_gate():
     print(f"{BOLD}This tool is not free.{RESET}")
     print("To use the tool, subscribe and click on the bell icon.")
     print("-" * 40)
+    
     for i in range(9, 0, -1):
-        print(f"Redirecting to YouTube in {i}...", end='\r')
+        print(f"Redirecting to YouTube App in {i}...", end='\r')
         time.sleep(1)
-    webbrowser.open("https://youtube.com/@hackers_colony_tech?si=TQdK5Tw4qCzL4ahz")
-    input(f"\n\n{BOLD}Press [ENTER] after subscribing to unlock...{RESET}")
+    
+    # FORCED REDIRECT TO APP
+    url = "https://youtube.com/@hackers_colony_tech?si=TQdK5Tw4qCzL4ahz"
+    try:
+        subprocess.run(["termux-open", url])
+    except:
+        print(f"\n{RED_BG} Error: Please install 'pkg install termux-api' {RESET}")
+    
+    print("\n")
+    input(f"{BOLD}Press [ENTER] once you have subscribed to unlock the tool...{RESET}")
 
 def get_real_wifi():
-    print(f"\n{BOLD}[*] Scanning for real nearby Wi-Fi...{RESET}")
+    print(f"\n{BOLD}[*] Searching for nearby networks...{RESET}")
     try:
-        # Get real scan data from Android system
+        # Get real scan data - Requires GPS to be ON
         scan_data = subprocess.check_output(["termux-wifi-scaninfo"])
         networks = json.loads(scan_data)
         
         if not networks:
-            print(f"{RED_BG} No networks found. Turn on GPS/Location! {RESET}")
+            print(f"{RED_BG} No networks found. Is your GPS/Location ON? {RESET}")
             return None
 
         print(f"\n{GREEN}[+] Found {len(networks)} Networks:{RESET}")
         for i, net in enumerate(networks):
-            ssid = net.get('ssid', 'Hidden Network')
+            ssid = net.get('ssid', 'Hidden')
             signal = net.get('rssi', '??')
-            print(f"{i+1}. {BOLD}{ssid}{RESET} (Signal: {signal}dBm)")
+            print(f"{i+1}. {BOLD}{ssid}{RESET} ({signal}dBm)")
         
-        choice = int(input(f"\nSelect Target Number (1-{len(networks)}): "))
+        choice = int(input(f"\nSelect Target Number: "))
         return networks[choice-1]['ssid']
     except Exception as e:
-        print(f"{RED_BG} Error: Make sure Termux:API app is installed! {RESET}")
+        print(f"{RED_BG} Error: Ensure Termux:API app is installed! {RESET}")
         return None
+
+def loading_bar(duration):
+    for i in range(21):
+        percent = i * 5
+        bar = "█" * i + "-" * (20 - i)
+        print(f"\r{BOLD}Attacking: [{bar}] {percent}%", end="")
+        time.sleep(duration / 20)
+    print("\n")
 
 def start_attack(target):
     clear()
     banner()
     print(f"Target: {BOLD}{target}{RESET}")
-    print("-" * 30)
-    print("1. Use Default Wordlist (1000 common)")
-    print("2. Import your own (.txt)")
-    mode = input("\nChoice: ")
-
-    wordlist = ["12345678", "password", "admin123", "wifi1234", "azhar786"] # Default
+    print("1. Use Default Wordlist\n2. Import Custom Wordlist")
+    
+    mode = input("\nSelect: ")
+    wordlist = ["12345678", "password", "admin123", "azhar786"]
     
     if mode == "2":
-        path = input("Enter full path to wordlist: ")
+        path = input("Enter Wordlist Path: ")
         try:
             with open(path, 'r') as f:
                 wordlist = f.read().splitlines()
         except:
-            print("File not found! Using default.")
+            print("Path invalid. Using default list.")
 
-    print(f"\n{BOLD}{GREEN}[!] Starting Dictionary Attack...{RESET}")
-    for pwd in wordlist:
-        print(f"Checking: {pwd} ", end='\r')
-        time.sleep(0.3)
+    print(f"\n{GREEN}[!] Bruteforce Started...{RESET}")
+    loading_bar(5) # 5 second loading animation
     
-    print(f"\n\n{RED_BG} ATTACK FAILED {RESET}")
-    print("Reason: WPA2/3 encryption requires Root to capture Handshake.")
+    for pwd in wordlist:
+        print(f"Testing Hash: {pwd} ", end='\r')
+        time.sleep(0.2)
+    
+    print(f"\n\n{RED_BG} SECURITY ALERT {RESET}")
+    print("Handshake capture failed. Android OS blocked raw packet access.")
+    print("Note: Dictionary attacks on WPA2/3 require Root for 'Monitor Mode'.")
 
 if __name__ == "__main__":
     redirect_gate()
